@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizarra Digital - Plan 9: Lectura y Comprensión Lectora</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        montano: {
+                            blue: '#1269A8',
+                            yellow: '#F7D615',
+                            teal: '#54887D',
+                            lightblue: '#88B5C7',
+                            olive: '#A6B046',
+                            bg: '#F2F5E9'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Segoe UI', 'Tahoma', 'Geneva', 'Verdana', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a232a;
+            color: #2d3748;
+        }
+        .board-frame {
+            background-color: #1269A8;
+            border: 10px solid #F7D615;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .tab-btn.active {
+            background-color: #F2F5E9;
+            color: #1269A8;
+            border-bottom: 4px solid #F7D615;
+            font-weight: 800;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tab-btn {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-btn:hover:not(.active) {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.3s ease-in-out;
+            opacity: 0;
+        }
+        .accordion-content.open {
+            max-height: 1000px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in-out, opacity 0.4s ease-in-out;
+        }
+        .board-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .board-content::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+        .board-content::-webkit-scrollbar-thumb {
+            background: #54887D;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-2 md:p-4 flex justify-center items-center">
+
+    <!-- CONTENEDOR PRINCIPAL DE LA PIZARRA DIGITAL -->
+    <div id="boardContainer" class="board-frame w-full max-w-7xl rounded-2xl overflow-hidden flex flex-col min-h-[92vh]">
+        
+        <!-- ENCABEZADO INSTITUCIONAL -->
+        <header class="bg-montano-blue p-3 md:p-4 flex flex-wrap justify-between items-center gap-3 border-b-2 border-montano-yellow">
+            <div class="flex items-center gap-3">
+                <!-- Logo Oficial Colegio Montano -->
+                <div class="bg-white p-1.5 rounded-xl shadow-md flex items-center justify-center">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyEop0yf6lZ7Jk9MILZxF1rBj4Oqs5esyhIQ&s" alt="Logo Colegio Montano" class="h-10 md:h-12 object-contain" onerror="this.onerror=null; this.src='https://placehold.co/150x50/1269A8/FFFFFF?text=Colegio+Montano'">
+                </div>
+                <div>
+                    <h1 class="text-white text-base md:text-2xl font-extrabold tracking-wide">COLEGIO MONTANO</h1>
+                    <p class="text-montano-yellow text-xs md:text-sm font-semibold">Pizarra Digital Interactiva | Plan No. 9</p>
+                </div>
+            </div>
+
+            <!-- Datos Generales del Plan -->
+            <div class="hidden lg:flex gap-4 text-xs text-white bg-white/10 p-2 rounded-lg border border-white/20">
+                <div><strong>Curso:</strong> Comunicación y Lenguaje</div>
+                <div><strong>Grado:</strong> 5to Primaria</div>
+                <div><strong>Unidad:</strong> I Unidad</div>
+                <div><strong>Fecha:</strong> 6ta Sem. Marzo</div>
+                <div><strong>Docente:</strong> Cecilia Mendoza</div>
+            </div>
+
+            <!-- Botón de Pantalla Completa -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleFullscreen()" class="bg-montano-yellow hover:bg-yellow-400 text-montano-blue font-bold px-3 py-2 rounded-xl shadow-md flex items-center gap-2 text-xs md:text-sm transition-transform active:scale-95">
+                    <i class="fa-solid fa-expand" id="fullscreenIcon"></i>
+                    <span id="fullscreenText" class="hidden md:inline">Pantalla Completa</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- NAVEGACIÓN POR PESTAÑAS (SECUENCIA DIDÁCTICA) -->
+        <nav class="bg-montano-blue px-2 md:px-4 pt-2 flex flex-wrap gap-1 md:gap-2 border-b border-white/20">
+            <button onclick="switchTab('encabezado')" id="tab-encabezado" class="tab-btn active px-3 py-2 md:px-4 md:py-2.5 rounded-t-xl text-xs md:text-sm flex items-center gap-2">
+                <i class="fa-solid fa-compass"></i> Marco Pedagógico
+            </button>
+            <button onclick="switchTab('momento1')" id="tab-momento1" class="tab-btn px-3 py-2 md:px-4 md:py-2.5 rounded-t-xl text-xs md:text-sm flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-montano-yellow"></i> I) Introducción (5 min)
+            </button>
+            <button onclick="switchTab('momento2')" id="tab-momento2" class="tab-btn px-3 py-2 md:px-4 md:py-2.5 rounded-t-xl text-xs md:text-sm flex items-center gap-2">
+                <i class="fa-solid fa-user"></i> II) Individual (20 min)
+            </button>
+            <button onclick="switchTab('momento3')" id="tab-momento3" class="tab-btn px-3 py-2 md:px-4 md:py-2.5 rounded-t-xl text-xs md:text-sm flex items-center gap-2">
+                <i class="fa-solid fa-users"></i> III) Cooperativo (30 min)
+            </button>
+            <button onclick="switchTab('momento4')" id="tab-momento4" class="tab-btn px-3 py-2 md:px-4 md:py-2.5 rounded-t-xl text-xs md:text-sm flex items-center gap-2">
+                <i class="fa-solid fa-comments"></i> IV) Plenaria / Juego (15 min)
+            </button>
+            <button onclick="switchTab('evaluacion')" id="tab-evaluacion" class="tab-btn px-3 py-2 md:px-4 md:py-2.5 rounded-t-xl text-xs md:text-sm flex items-center gap-2">
+                <i class="fa-solid fa-list-check"></i> Evaluación Plenaria
+            </button>
+        </nav>
+
+        <!-- ESPACIO DE TRABAJO / ÁREA INTERACTIVA -->
+        <main class="bg-montano-bg p-4 md:p-6 flex-1 overflow-y-auto board-content max-h-[75vh]">
+
+            <!-- PESTAÑA: MARCO PEDAGÓGICO Y DATOS DEL PLAN -->
+            <section id="sec-encabezado" class="space-y-4">
+                <div class="border-l-8 border-montano-blue pl-4 py-1">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-montano-blue">Marco Pedagógico Institucional</h2>
+                    <p class="text-xs md:text-sm text-gray-600">Alineación curricular con el CNB de Guatemala y el Modelo Formativo Montano.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- CNB & Competencia -->
+                    <div class="bg-white p-4 rounded-xl shadow border-t-4 border-montano-blue space-y-2">
+                        <div class="flex items-center gap-2 text-montano-blue font-bold text-sm">
+                            <i class="fa-solid fa-graduation-cap text-lg"></i>
+                            <h3>Competencia y Logro de Aprendizaje (CNB Guatemala)</h3>
+                        </div>
+                        <p class="text-xs text-gray-700 leading-relaxed">
+                            <strong>Competencia:</strong> Utiliza la lectura como medio de información, ampliación de conocimientos y recreación, aplicando técnicas de análisis en los tres niveles de comprensión (literal, inferencial y crítico).
+                        </p>
+                        <p class="text-xs text-gray-700 leading-relaxed">
+                            <strong>Logro de Aprendizaje:</strong> Distingue e interpreta la información explícita e implícita del texto narrativo "Un Viaje Telefónico", emitiendo juicios de valor sobre el mensaje y la evolución de la comunicación humana.
+                        </p>
+                    </div>
+
+                    <!-- Hábitos Montano y Competencias Clave -->
+                    <div class="bg-white p-4 rounded-xl shadow border-t-4 border-montano-yellow space-y-2">
+                        <div class="flex items-center gap-2 text-montano-blue font-bold text-sm">
+                            <i class="fa-solid fa-star text-montano-yellow text-lg"></i>
+                            <h3>Hábitos Montano e Integración Formativa</h3>
+                        </div>
+                        <ul class="text-xs text-gray-700 space-y-1">
+                            <li><i class="fa-solid fa-circle-check text-montano-teal mr-1"></i> <strong>Buscar primero entender, luego ser entendido:</strong> Leer atenta y empáticamente las posturas de los personajes antes de emitir opiniones.</li>
+                            <li><i class="fa-solid fa-circle-check text-montano-teal mr-1"></i> <strong>Poner primero lo primero:</strong> Priorizar las ideas principales y los niveles de comprensión antes de redactar conclusiones.</li>
+                            <li><i class="fa-solid fa-circle-check text-montano-teal mr-1"></i> <strong>Sinergizar:</strong> Enriquecer la interpretación del texto a través del diálogo grupal.</li>
+                        </ul>
+                        <hr class="my-1">
+                        <p class="text-xs text-gray-600">
+                            <strong>Competencias clave:</strong> Pensamiento crítico, comprensión lectora, empatía intergeneracional y comunicación oral.
+                        </p>
+                    </div>
+
+                    <!-- Recursos y Evaluación (Momentos) -->
+                    <div class="bg-white p-4 rounded-xl shadow border-t-4 border-montano-teal space-y-2 col-span-1 md:col-span-2">
+                        <div class="flex items-center gap-2 text-montano-teal font-bold text-sm">
+                            <i class="fa-solid fa-layer-group text-lg"></i>
+                            <h3>Recursos Didácticos y Momentos de Evaluación</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                            <div class="bg-montano-bg p-2.5 rounded-lg border border-gray-300">
+                                <strong class="text-montano-blue block mb-1">🔍 Eval. Inicial (Diagnóstica)</strong>
+                                Predicciones a partir del título y artefactos antiguos mediante la dinámica "La Llamada del Misterio".
+                            </div>
+                            <div class="bg-montano-bg p-2.5 rounded-lg border border-gray-300">
+                                <strong class="text-montano-teal block mb-1">📝 Eval. Formativa</strong>
+                                Trabajo individual con la Guía No. 9 y auto-verificación con acordeones desplegables.
+                            </div>
+                            <div class="bg-montano-bg p-2.5 rounded-lg border border-gray-300">
+                                <strong class="text-montano-olive block mb-1">📊 Eval. Sumativa</strong>
+                                Lista de cotejo interactiva para la plenaria y coevaluación del organizador gráfico grupal.
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 italic mt-1">
+                            <strong>Recursos requeridos:</strong> Guía de Estudio No. 9, lectura "Un Viaje Telefónico", cuadernos, Pizarra Digital / Proyector interactivo.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA I: INTRODUCCIÓN MOTIVANTE -->
+            <section id="sec-momento1" class="hidden space-y-4">
+                <div class="border-l-8 border-montano-yellow pl-4 py-1">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-montano-blue">Pestaña I) Introducción Motivante (~5 Minutos)</h2>
+                    <p class="text-xs md:text-sm text-gray-600">Recreo Cerebral y Activación de Conocimientos Previos.</p>
+                </div>
+
+                <!-- Tarjeta Principal del Reto -->
+                <div class="bg-white p-5 rounded-xl shadow border-2 border-montano-yellow space-y-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <span class="bg-montano-yellow text-montano-blue px-3 py-1 rounded-full text-xs font-bold uppercase">
+                            <i class="fa-solid fa-headset mr-1"></i> Dinámica Rápida: La Llamada del Tiempo
+                        </span>
+                        <span class="text-xs text-gray-500 font-semibold"><i class="fa-regular fa-clock"></i> Tiempo estimado: 5 minutos</span>
+                    </div>
+
+                    <p class="text-xs md:text-sm text-gray-700 leading-relaxed">
+                        Muestra la imagen mental o descripción de un <strong>teléfono de disco</strong> de mediados del siglo XX. Lanza esta pregunta exploratoria al aula antes de iniciar la lectura:
+                    </p>
+
+                    <!-- Desafío de Hipótesis -->
+                    <div class="bg-montano-blue/10 p-4 rounded-xl border border-montano-blue text-center space-y-2">
+                        <p class="text-xs md:text-sm font-bold text-montano-blue">
+                            "Imagina que suena este antiguo teléfono de disco y, al contestar, escuchas la voz de un niño saludándote desde el año 1950 en el puerto de San José... ¿Qué sería lo primero que le preguntarías sobre su vida diaria?"
+                        </p>
+                    </div>
+
+                    <!-- Acordeón Desplegable con Solución Oculta -->
+                    <div>
+                        <button onclick="toggleAccordion('sol-intro')" class="w-full bg-montano-blue hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg text-xs md:text-sm flex items-center justify-between transition">
+                            <span><i class="fa-solid fa-key mr-2"></i> Ver Orientación de Predicción Lectora</span>
+                            <i class="fa-solid fa-chevron-down" id="icon-sol-intro"></i>
+                        </button>
+                        <div id="sol-intro" class="accordion-content bg-montano-bg p-4 rounded-b-lg border border-montano-blue text-xs md:text-sm space-y-2 mt-1">
+                            <p class="font-bold text-montano-blue">Propósito Pedagógico (Antes de Leer):</p>
+                            <p class="text-gray-700">
+                                Activar el interés por la comparación entre el presente (2026) y el pasado (1950) en Guatemala, preparando el terreno para evaluar los tres niveles de comprensión (literal, inferencial y crítico).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA II: TRABAJO INDIVIDUAL -->
+            <section id="sec-momento2" class="hidden space-y-4">
+                <div class="border-l-8 border-montano-blue pl-4 py-1">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-montano-blue">Pestaña II) Trabajo Individual (20 Minutos)</h2>
+                    <p class="text-xs md:text-sm text-gray-600">Lectura guiada de "Un Viaje Telefónico" y resolución de preguntas por niveles con soluciones ocultas.</p>
+                </div>
+
+                <!-- Contenedor de Ejercicios -->
+                <div class="space-y-3">
+                    <p class="text-xs text-gray-600">Instrucción: Completa cada pregunta en tu cuaderno de trabajo a partir de la lectura de la Guía 9 y luego verifica tus deducciones con el botón desplegable.</p>
+
+                    <!-- Ejercicio 1 -->
+                    <div class="bg-white p-4 rounded-xl shadow border border-gray-200 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-montano-blue">
+                            <span>Ejercicio 1 (Nivel Literal)</span>
+                            <span class="bg-montano-olive/20 text-montano-olive px-2 py-0.5 rounded">Extracción Explícita</span>
+                        </div>
+                        <p class="text-xs md:text-sm font-semibold text-gray-800">
+                            ¿En qué ciudad residía Mateo y desde qué lugar llamaba el marino don Tomás?
+                        </p>
+                        <button onclick="toggleAccordion('sol-ind-1')" class="bg-montano-teal text-white text-xs px-3 py-1.5 rounded-lg hover:bg-teal-700 transition flex items-center gap-1">
+                            <i class="fa-solid fa-eye"></i> Desplegar Solución / Orientación
+                        </button>
+                        <div id="sol-ind-1" class="accordion-content bg-montano-bg p-3 rounded border border-montano-teal text-xs">
+                            <strong class="text-montano-teal block mb-1">Respuesta Literal:</strong>
+                            Mateo residía en <strong>Quetzaltenango</strong> y don Tomás llamaba desde el <strong>Puerto de San José</strong> en el año 1950.
+                        </div>
+                    </div>
+
+                    <!-- Ejercicio 2 -->
+                    <div class="bg-white p-4 rounded-xl shadow border border-gray-200 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-montano-blue">
+                            <span>Ejercicio 2 (Nivel Inferencial)</span>
+                            <span class="bg-montano-teal/20 text-montano-teal px-2 py-0.5 rounded">Deducción de Pistas</span>
+                        </div>
+                        <p class="text-xs md:text-sm font-semibold text-gray-800">
+                            ¿Por qué don Tomás afirmó que <em>"la verdadera tecnología no es el teléfono, sino las historias que nos unen"</em>?
+                        </p>
+                        <button onclick="toggleAccordion('sol-ind-2')" class="bg-montano-teal text-white text-xs px-3 py-1.5 rounded-lg hover:bg-teal-700 transition flex items-center gap-1">
+                            <i class="fa-solid fa-eye"></i> Desplegar Solución / Orientación
+                        </button>
+                        <div id="sol-ind-2" class="accordion-content bg-montano-bg p-3 rounded border border-montano-teal text-xs">
+                            <strong class="text-montano-teal block mb-1">Deducción Esperada:</strong>
+                            Porque los dispositivos técnicos cambian y quedan obsoletos con el tiempo, pero la capacidad de transmitir valores, afecto y recuerdos a través del lenguaje perdura por siempre.
+                        </div>
+                    </div>
+
+                    <!-- Ejercicio 3 -->
+                    <div class="bg-white p-4 rounded-xl shadow border border-gray-200 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-montano-blue">
+                            <span>Ejercicio 3 (Nivel Crítico)</span>
+                            <span class="bg-montano-blue/20 text-montano-blue px-2 py-0.5 rounded">Juicio de Valor</span>
+                        </div>
+                        <p class="text-xs md:text-sm font-semibold text-gray-800">
+                            ¿Crees que en la actualidad escuchamos a los adultos mayores con la misma atención con la que Mateo escuchó a don Tomás? Fundamenta tu opinión.
+                        </p>
+                        <button onclick="toggleAccordion('sol-ind-3')" class="bg-montano-teal text-white text-xs px-3 py-1.5 rounded-lg hover:bg-teal-700 transition flex items-center gap-1">
+                            <i class="fa-solid fa-eye"></i> Desplegar Solución / Orientación
+                        </button>
+                        <div id="sol-ind-3" class="accordion-content bg-montano-bg p-3 rounded border border-montano-teal text-xs">
+                            <strong class="text-montano-teal block mb-1">Criterio Crítico:</strong>
+                            El estudiante debe contrastar la prisa moderna y la distracción por pantallas con la paciencia necesaria para valorar la sabiduría intergeneracional de los abuelos.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA III: TRABAJO COOPERATIVO EN EQUIPO -->
+            <section id="sec-momento3" class="hidden space-y-4">
+                <div class="border-l-8 border-montano-teal pl-4 py-1">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-montano-blue">Pestaña III) Trabajo Cooperativo / en Equipo (30 Minutos)</h2>
+                    <p class="text-xs md:text-sm text-gray-600">Desafío Grupal: Creación de la "Matriz de Análisis Lector de Tres Niveles".</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl shadow border border-gray-200 space-y-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2 border-b pb-3">
+                        <span class="bg-montano-teal text-white px-3 py-1 rounded-full text-xs font-bold">
+                            <i class="fa-solid fa-diagram-project mr-1"></i> Reto: Matriz Tridimensional de Comprensión Lectora
+                        </span>
+                        <span class="text-xs text-gray-500 font-semibold"><i class="fa-regular fa-clock"></i> 30 minutos</span>
+                    </div>
+
+                    <!-- Asignación de Roles -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-montano-bg p-3 rounded-lg border-l-4 border-montano-blue">
+                            <strong class="text-montano-blue font-bold block mb-1">Rol 1: Especialista Literal</strong>
+                            Filtra y resume los 3 datos numéricos y geográficos más importantes del texto.
+                        </div>
+                        <div class="bg-montano-bg p-3 rounded-lg border-l-4 border-montano-yellow">
+                            <strong class="text-montano-blue font-bold block mb-1">Rol 2: Especialista Inferencial</strong>
+                            Infiere 2 conclusiones sobre cómo era la infancia en Guatemala en 1950 comparada con 2026.
+                        </div>
+                        <div class="bg-montano-bg p-3 rounded-lg border-l-4 border-montano-teal">
+                            <strong class="text-montano-blue font-bold block mb-1">Rol 3: Crítico y Portavoz</strong>
+                            Redacta una enseñanza final (moraleja) y representa al grupo en la plenaria.
+                        </div>
+                    </div>
+
+                    <!-- Consigna del Producto -->
+                    <div class="bg-montano-lightblue/10 p-4 rounded-lg border border-montano-lightblue space-y-2">
+                        <h4 class="font-bold text-montano-blue text-xs md:text-sm"><i class="fa-solid fa-table mr-1"></i> Producto a Entregar:</h4>
+                        <p class="text-xs text-gray-700 leading-relaxed">
+                            Diseñar en una cartulina un esquema de 3 columnas divididas en: <strong>1. Lo que el texto dice explícitamente (Literal)</strong>, <strong>2. Lo que el texto me hace deducir (Inferencial)</strong> y <strong>3. Lo que mi equipo opina o valora (Crítico)</strong>.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA IV: PLENARIA / JUEGO INTERACTIVO -->
+            <section id="sec-momento4" class="hidden space-y-4">
+                <div class="border-l-8 border-montano-olive pl-4 py-1">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-montano-blue">Pestaña IV) Plenaria y Juego Interactivo (15 Minutos)</h2>
+                    <p class="text-xs md:text-sm text-gray-600">Compartir rutas de solución e integración con el juego "Pasapalabra del Lector".</p>
+                </div>
+
+                <!-- Juego Interactivo Pasapalabra / Trivia -->
+                <div class="bg-white p-5 rounded-xl shadow border-2 border-montano-teal space-y-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <h3 class="font-bold text-montano-blue text-sm md:text-base flex items-center gap-2">
+                            <i class="fa-solid fa-gamepad text-montano-yellow text-lg"></i>
+                            Juego Interactivo: "Pasapalabra Comprensiva"
+                        </h3>
+                        <span class="text-xs bg-montano-teal text-white px-2.5 py-1 rounded-full font-bold">Gamificación</span>
+                    </div>
+
+                    <!-- Preguntas Rápidas del Rosco -->
+                    <div id="triviaContainer" class="bg-montano-bg p-4 rounded-xl border border-gray-300 text-center space-y-3">
+                        <p id="triviaQuestion" class="font-bold text-gray-800 text-sm md:text-base">
+                            Con la Nivel: **INFERENCIAL** — ¿Por qué Mateo sintió curiosidad al escuchar sonar el teléfono de disco?
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                            <button onclick="checkTrivia(false)" class="p-2.5 bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-400 font-semibold text-gray-700">
+                                A) Porque sonaba todo el día
+                            </button>
+                            <button onclick="checkTrivia(true)" class="p-2.5 bg-white border border-gray-300 rounded-lg hover:bg-green-50 hover:border-green-400 font-semibold text-gray-700">
+                                B) Porque nadie solía llamar a ese aparato
+                            </button>
+                            <button onclick="checkTrivia(false)" class="p-2.5 bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-400 font-semibold text-gray-700">
+                                C) Porque estaba descompuesto
+                            </button>
+                        </div>
+                        <div id="triviaFeedback" class="text-xs font-bold mt-2 min-h-[20px]"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA: EVALUACIÓN DE LA PLENARIA (LISTA DE COTEJO) -->
+            <section id="sec-evaluacion" class="hidden space-y-4">
+                <div class="border-l-8 border-montano-blue pl-4 py-1">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-montano-blue">Instrumento de Evaluación para la Plenaria</h2>
+                    <p class="text-xs md:text-sm text-gray-600">Lista de cotejo interactiva para medir el análisis de los tres niveles de comprensión.</p>
+                </div>
+
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow border border-gray-200 overflow-x-auto">
+                    <table class="w-full text-left text-xs md:text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-montano-blue text-white">
+                                <th class="p-3 rounded-tl-lg">Criterio de Evaluación</th>
+                                <th class="p-3 text-center">Excelente (2 pts)</th>
+                                <th class="p-3 text-center">En Proceso (1 pt)</th>
+                                <th class="p-3 text-center rounded-tr-lg">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 text-gray-700">
+                            <!-- Criterio 1 -->
+                            <tr>
+                                <td class="p-3">
+                                    <strong>1. Precisión Literal:</strong>
+                                    <br><span class="text-xs text-gray-500">Identifica personajes, lugares y fechas explícitas sin margen de error.</span>
+                                </td>
+                                <td class="p-3 text-center">Cita datos exactos del texto.</td>
+                                <td class="p-3 text-center">Confunde lugares o fechas.</td>
+                                <td class="p-3 text-center">
+                                    <input type="checkbox" class="w-5 h-5 accent-montano-blue cursor-pointer">
+                                </td>
+                            </tr>
+                            <!-- Criterio 2 -->
+                            <tr>
+                                <td class="p-3">
+                                    <strong>2. Capacidad Inferencial:</strong>
+                                    <br><span class="text-xs text-gray-500">Deduce ideas no escritas fundamentándose en pistas lógicas del relato.</span>
+                                </td>
+                                <td class="p-3 text-center">Deducciones lógicas y sólidas.</td>
+                                <td class="p-3 text-center">Aporta ideas desconectadas.</td>
+                                <td class="p-3 text-center">
+                                    <input type="checkbox" class="w-5 h-5 accent-montano-blue cursor-pointer">
+                                </td>
+                            </tr>
+                            <!-- Criterio 3 -->
+                            <tr>
+                                <td class="p-3">
+                                    <strong>3. Postura Crítica y Valores:</strong>
+                                    <br><span class="text-xs text-gray-500">Argumenta la importancia de la comunicación y respeto hacia los ancianos.</span>
+                                </td>
+                                <td class="p-3 text-center">Opinión madura y fundamentada.</td>
+                                <td class="p-3 text-center">Responde brevemente sin justificar.</td>
+                                <td class="p-3 text-center">
+                                    <input type="checkbox" class="w-5 h-5 accent-montano-blue cursor-pointer">
+                                </td>
+                            </tr>
+                            <!-- Criterio 4 -->
+                            <tr>
+                                <td class="p-3">
+                                    <strong>4. Trabajo en Equipo y Comunicación:</strong>
+                                    <br><span class="text-xs text-gray-500">Demuestra equidad en la presentación oral y respeto a las preguntas del grupo.</span>
+                                </td>
+                                <td class="p-3 text-center">Exposición clara y fluida.</td>
+                                <td class="p-3 text-center">Exposición desorganizada.</td>
+                                <td class="p-3 text-center">
+                                    <input type="checkbox" class="w-5 h-5 accent-montano-blue cursor-pointer">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- PIE DE PAGINA PIZARRA -->
+        <footer class="bg-montano-blue p-2.5 text-center text-white text-xs border-t border-montano-yellow/50 flex justify-between items-center px-4">
+            <span>Colegio Montano &copy; 2026 - Pizarra Digital Interactiva</span>
+            <span class="text-montano-yellow font-semibold">Uso Exclusivo Docente</span>
+        </footer>
+    </div>
+
+    <!-- CÓDIGO JAVASCRIPT DE INTERACCIÓN -->
+    <script>
+        // Navegación entre Pestañas
+        function switchTab(tabId) {
+            const sections = ['encabezado', 'momento1', 'momento2', 'momento3', 'momento4', 'evaluacion'];
+            sections.forEach(id => {
+                const sec = document.getElementById('sec-' + id);
+                const btn = document.getElementById('tab-' + id);
+                if (sec) sec.classList.add('hidden');
+                if (btn) btn.classList.remove('active');
+            });
+
+            const activeSec = document.getElementById('sec-' + tabId);
+            const activeBtn = document.getElementById('tab-' + tabId);
+            if (activeSec) activeSec.classList.remove('hidden');
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        // Control de Acordeones / Soluciones Ocultas
+        function toggleAccordion(accId) {
+            const content = document.getElementById(accId);
+            if (!content) return;
+
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+            } else {
+                content.classList.add('open');
+            }
+        }
+
+        // Feedback del Juego Trivia
+        function checkTrivia(isCorrect) {
+            const feedback = document.getElementById('triviaFeedback');
+            if (isCorrect) {
+                feedback.className = "text-xs font-bold mt-2 text-green-600 animate-bounce";
+                feedback.textContent = "¡Correcto! 🎉 Como el aparato raramente sonaba, Mateo sintió curiosidad inmediata.";
+            } else {
+                feedback.className = "text-xs font-bold mt-2 text-red-600";
+                feedback.textContent = "Vuelve a leer la pista: El texto dice explícitamente 'Nadie solía llamar a ese aparato'.";
+            }
+        }
+
+        // Botón de Pantalla Completa
+        function toggleFullscreen() {
+            const container = document.getElementById('boardContainer');
+            const icon = document.getElementById('fullscreenIcon');
+            const text = document.getElementById('fullscreenText');
+
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+                if (icon) icon.className = 'fa-solid fa-compress';
+                if (text) text.textContent = 'Salir Pantalla Completa';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                if (icon) icon.className = 'fa-solid fa-expand';
+                if (text) text.textContent = 'Pantalla Completa';
+            }
+        }
+
+        // Manejo de la tecla ESC al salir de pantalla completa
+        document.addEventListener('fullscreenchange', exitHandler);
+        document.addEventListener('webkitfullscreenchange', exitHandler);
+        document.addEventListener('mozfullscreenchange', exitHandler);
+        document.addEventListener('MSFullscreenChange', exitHandler);
+
+        function exitHandler() {
+            if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
+                const icon = document.getElementById('fullscreenIcon');
+                const text = document.getElementById('fullscreenText');
+                if (icon) icon.className = 'fa-solid fa-expand';
+                if (text) text.textContent = 'Pantalla Completa';
+            }
+        }
+    </script>
+</body>
+</html>
